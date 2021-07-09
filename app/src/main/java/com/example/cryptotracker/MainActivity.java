@@ -6,6 +6,7 @@ import com.google.android.material.snackbar.Snackbar;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.util.Log;
 import android.view.View;
 
 import androidx.navigation.NavController;
@@ -18,10 +19,67 @@ import com.example.cryptotracker.databinding.ActivityMainBinding;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import java.io.IOException;
+
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
+
+    void getHTTPData() throws IOException {
+        // https://www.coingecko.com/api/documentations/v3#/
+        OkHttpClient client = new OkHttpClient();
+        HttpUrl.Builder urlBuilder =
+                HttpUrl.parse("https://api.coingecko.com/api/v3/coins/list")
+                        .newBuilder();
+
+        urlBuilder.addQueryParameter("include_platform", "true");
+
+        String url = urlBuilder.build().toString();
+
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        client.newCall(request).enqueue(new Callback()
+                {
+
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        Log.d("OkHTTPResponse","Error on the call");
+                        call.cancel();
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+
+                        final String myResponse = response.body().string();
+                        Log.d("OkHTTPResponse","Call Successful");
+                        response.close();
+                        MainActivity.this.runOnUiThread(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                Log.d("OkHTTPResponse","Code running on the UI thread");
+                                Log.d("OkHTTPResponse",myResponse);
+                                //mTextViewJSONData.setText("Server API Sent Data");
+
+                            }
+
+                        });
+                    }
+
+                }
+        );
+
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +101,12 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+
+        try {
+            getHTTPData();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
