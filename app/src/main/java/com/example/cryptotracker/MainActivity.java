@@ -32,33 +32,36 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
+    /* UI Elements */
     private ActivityMainBinding binding;
-    private TextView mJSON_output;
-    private final ArrayList<Coin> Coins = new ArrayList<>();
-    private ArrayAdapter<Coin> coinAdapter;
-    private Spinner coinSpinner;
+    private Spinner mCoinSpinner;
+    private TextView mScrollText;
 
+    /* Crypto Coin List */
+    private final ArrayList<Coin> mCoinList = new ArrayList<>();
+    private ArrayAdapter<Coin> mCoinAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        /* UI */
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
         setSupportActionBar(binding.toolbar);
+        mScrollText = findViewById(R.id.text_json);
 
-        Coins.add(new Coin("Loading Crypto", "Currency", 0.0));
-        mJSON_output = findViewById(R.id.text_json);
-        coinSpinner = findViewById(R.id.coin_spinner);
-        coinAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, Coins);
-        coinSpinner.setAdapter(coinAdapter);
-        coinSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        /* Coin List Spinner Setup */
+        mCoinList.add(new Coin("Loading Crypto", "Currency", 0.0));
+        mCoinSpinner = findViewById(R.id.coin_spinner);
+        mCoinAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, mCoinList);
+        mCoinSpinner.setAdapter(mCoinAdapter);
+        mCoinSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 // Get the value selected by the user
                 Coin selectedCoin = (Coin) parent.getSelectedItem();
-                Log.d("Spinner","Item Selected is " + selectedCoin.toString());
+
+                mScrollText.append(selectedCoin.toString() + "\n");
             }
 
             @Override
@@ -66,24 +69,25 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("Spinner","No Item Selected");
             }
         });
-        Log.d("Spinner", "Listener Set");
 
-
+        /* Retrieve coin list for spinner */
         try {
             getHTTPData();
         } catch (IOException e) {
             e.printStackTrace();
+            mCoinList.add(new Coin("Load Error", "Currency", 0.0));
         }
 
    }
 
-    void getHTTPData() throws IOException {
-        // https://www.coingecko.com/api/documentations/v3#/
+   void getHTTPData() throws IOException {
+        /* https://www.coingecko.com/api/documentations/v3#/ */
         OkHttpClient client = new OkHttpClient();
+        /* Set API URL */
         HttpUrl.Builder urlBuilder =
                 Objects.requireNonNull(HttpUrl.parse("https://api.coingecko.com/api/v3/simple/price"))
                         .newBuilder();
-
+       /* Add coin list to be fetched could be a string resource */
         urlBuilder.addQueryParameter("ids", "ampleforth," +
                 "ankr," +
                 "apollo," +
@@ -108,59 +112,59 @@ public class MainActivity extends AppCompatActivity {
                 "sushi," +
                 "filecoin");
 
+        /* Add the returned currency parameter */
         urlBuilder.addQueryParameter("vs_currencies", "gbp");
 
-
+        /* Build the URL with params */
         String url = urlBuilder.build().toString();
-        Log.d("OkHTTP_URL",url);
+
+        /* Create an OkHTTP request object */
         Request request = new Request.Builder()
                 .url(url)
                 .build();
 
+        /* Add the request to the call queue for sending */
         client.newCall(request).enqueue(new Callback()
                 {
 
                     @Override
                     public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                        Log.d("OkHTTPResponse","Error on the call");
+                        Log.d("OkHTTPResponse","The API call for the coins failed: "
+                                + e.getMessage());
                         call.cancel();
                     }
 
                     @Override
                     public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                        JSONObject json;
+
                         JSONObject oCoin;
 
-                        double CoinValue;
-
-                        final String myResponse = Objects.requireNonNull(response.body()).string();
-                        Log.d("OkHTTPResponse","Call Successful");
-
+                        final String myResponse = Objects.requireNonNull(response.body(),"Invalid Null API Response Received").string();
+                        Log.d("OkHTTPResponse","API Call Successful");
                         response.close();
 
                         try {
-                            json = new JSONObject(myResponse);
-                            Coins.clear();
+                            JSONObject oJSON = new JSONObject(myResponse);
+                            mCoinList.clear();
 
-                            for (Iterator<String> it = json.keys(); it.hasNext(); ) {
+                            double CoinValue;
+                            /* Build the list of coins from API Data */
+                            for (Iterator<String> it = oJSON.keys(); it.hasNext(); ) {
                                 String coinName = it.next();
-                                CoinValue = json.getJSONObject(coinName).getDouble("gbp");
-                                Coins.add(new Coin(coinName, "gbp", CoinValue));
+                                CoinValue = oJSON.getJSONObject(coinName).getDouble("gbp");
+                                mCoinList.add(new Coin(coinName, "gbp", CoinValue));
                             }
 
-                            Log.d("OkHTTPResponse","JSON Worked " + coinSpinner.getOnItemSelectedListener());
-
-
                         } catch (JSONException e) {
-                            Log.d("OkHTTPResponse","JSON Problem");
+                            Log.d("OkHTTPResponse","JSON Format Problem");
                             e.printStackTrace();
                         }
+
                         MainActivity.this.runOnUiThread(() -> {
-                            Log.d("OkHTTPResponse","Code running on the UI thread");
                             Log.d("OkHTTPResponse",myResponse);
-                            mJSON_output.setText(myResponse);
-                            Coins.sort(new SortbyCoinName());
-                            coinAdapter.notifyDataSetChanged();
+                            /* Update spinner with new coin data */
+                            mCoinList.sort(new SortByCoinName());
+                            mCoinAdapter.notifyDataSetChanged();
 
                         });
                     }
@@ -168,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
-    }
+   }
 
 
     public void refreshCrypto(View view) {

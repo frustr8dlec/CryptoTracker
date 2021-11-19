@@ -31,6 +31,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
+            android:fontFamily="monospace"
             android:gravity="start|top"
             android:minHeight="48dp"
             tools:ignore="SpeakableTextPresentCheck" />
@@ -42,7 +43,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:onClick="refreshCrypto"
-        android:text="@string/udate_button"
+        android:text="@string/update_button"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
