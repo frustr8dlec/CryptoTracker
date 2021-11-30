@@ -34,7 +34,6 @@ public class MainActivity extends AppCompatActivity {
 
     /* UI Elements */
     private ActivityMainBinding binding;
-    private Spinner mCoinSpinner;
     private TextView mScrollText;
 
     /* Crypto Coin List */
@@ -52,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
         /* Coin List Spinner Setup */
         mCoinList.add(new Coin("Loading Crypto", "Currency", 0.0));
-        mCoinSpinner = findViewById(R.id.coin_spinner);
+        Spinner mCoinSpinner = findViewById(R.id.coin_spinner);
         mCoinAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, mCoinList);
         mCoinSpinner.setAdapter(mCoinAdapter);
         mCoinSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -88,29 +87,10 @@ public class MainActivity extends AppCompatActivity {
                 Objects.requireNonNull(HttpUrl.parse("https://api.coingecko.com/api/v3/simple/price"))
                         .newBuilder();
        /* Add coin list to be fetched could be a string resource */
-        urlBuilder.addQueryParameter("ids", "ampleforth," +
-                "ankr," +
-                "apollo," +
-                "bancor," +
-                "binancecoin," +
-                "bitcoin," +
-                "bitcoin-cash," +
-                "cardano," +
-                "chainlink," +
-                "dash," +
-                "ethereum," +
-                "tether," +
-                "polkadot," +
-                "uniswap," +
-                "litecoin," +
-                "internet-computer," +
-                "eos," +
-                "the-graph," +
-                "maker," +
-                "numeraire," +
-                "decentraland," +
-                "sushi," +
-                "filecoin");
+       urlBuilder.addQueryParameter("ids",
+          "ampleforth,ankr,apollo,bancor,binancecoin,bitcoin,bitcoin-cash,cardano,chainlink,"
+               +"dash,ethereum,tether,polkadot,uniswap,litecoin,internet-computer,eos,"
+               +"the-graph,maker,numeraire,decentraland,sushi,filecoin");
 
         /* Add the returned currency parameter */
         urlBuilder.addQueryParameter("vs_currencies", "gbp");
@@ -142,7 +122,24 @@ public class MainActivity extends AppCompatActivity {
                         final String myResponse = Objects.requireNonNull(response.body(),"Invalid Null API Response Received").string();
                         Log.d("OkHTTPResponse","API Call Successful");
                         response.close();
+                        /*
+                        Format Array of key value pairs
+                        Key = Coin Name
+                        Value = Coin data object
 
+                            Coin data object has one key value pair
+                            Key   = the currency
+                            Value = the value of the coin in that currency
+
+                        Sample JSON
+                        {
+                        "filecoin":{"gbp":40.32},
+                        "uniswap":{"gbp":14.89},
+                        "ethereum":{"gbp":3303.62},
+                        "chainlink":{"gbp":18.37},
+                        "numeraire":{"gbp":29.89}
+                        }
+                         */
                         try {
                             JSONObject oJSON = new JSONObject(myResponse);
                             mCoinList.clear();
